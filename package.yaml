@@ -42,8 +42,6 @@ tests:
             - -with-rtsopts=-N
         dependencies:
             - QuickCheck
-            - tasty
-            - tasty-hunit
-            - tasty-quickcheck
+            - hspec
 
 
