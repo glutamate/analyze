@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+module Main where
 
 import qualified Analyze                  as A
 import           Analyze.Common           ((<&>))
@@ -131,25 +132,6 @@ testAddColumn = testCase "add column" $ do
   --A.numRows actual @?= 1
   actual @?= expected
 
-testTitanic :: TestTree
-testTitanic = testCase "load titanic" $ do
-  frame <- A.datasetWithHeader "titanic" "test"
-  let expectedCols = V.fromList
-        [ "PassengerId"
-        , "Pclass"
-        , "Name"
-        , "Sex"
-        , "Age"
-        , "SibSp"
-        , "Parch"
-        , "Ticket"
-        , "Fare"
-        , "Cabin"
-        , "Embarked"
-        ]
-  A._rframeKeys frame @?= expectedCols
-  A.numRows frame @?= 418
-
 testOneHot :: TestTree
 testOneHot = testCase "one hot" $ do
   color <- getFrameFixture "color"
@@ -171,7 +153,6 @@ tests = testGroup "Tests"
   , testUpdateOverlap
   , testTakeRows
   , testAddColumn
-  , testTitanic
   , testOneHot
   ]
 
