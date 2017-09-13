@@ -1,19 +1,4 @@
-module Analyze where
-
-import Data.ByteString
-
---import Data.Vector.Primitive.Mutable as MVector
-import Data.Serialize
-
-
-data Series key value
-data Frame key value
-
--- | The Analyze monad
-data AnalyzeOperation a
--- it should instance Functor, Applicative, Monad, MonadIO, etc...
-
-
+module Analyze.Frame where
 
 -- | Creates a 'Frame' in the same way as 'Data.Map.fromList'.
 -- Series values must be serialized to a 'ByteString' using
