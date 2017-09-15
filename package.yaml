@@ -12,7 +12,6 @@ category: Data Science
 dependencies:
     - base >= 4.9 && < 5
     - bytestring
-    - cereal
     - text
     - vector
     - vector-algorithms
@@ -40,4 +39,12 @@ tests:
             - QuickCheck
             - hspec
 
-
+benchmarks:
+    analyze:
+        main: Main.hs
+        source-dirs:
+            - benchmark
+            - src
+        dependencies:
+            - random
+            - criterion
