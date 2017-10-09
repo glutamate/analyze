@@ -4,147 +4,135 @@
 -- | Core frame types and functions
 module Analyze.Frame where
 
-import           Analyze.Common
-import           Analyze.Decoding    (Decoder (..), decoderKeys, runDecoder)
 import           Control.Monad       (join)
 import           Control.Monad.Catch (MonadThrow (..))
-import           Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HM
+
 import qualified Data.HashSet        as HS
-import           Data.Vector         (Vector)
+import qualified Data.HashMap.Strict as HM
+import           Data.HashMap.Strict (HashMap)
+import qualified Data.Text           as Text
+import           Data.Text           (Text)
 import qualified Data.Vector         as V
+import           Data.Vector         (Vector)
+
+import           Analyze.Common
+import           Analyze.Decoding    (Decoder (..), decoderKeys, runDecoder)
 
 -- | In-memory row-oriented frame with columns named by `k` and values by `v`
-data Frame k v = Frame
-  { -- | Ordered vector of column names
-    _rframeKeys   :: !(Vector k)
+data Frame r c = Frame
+  { -- | Ordered vector of row names
+    _frameRowKeys   :: !(Vector r)
+  , -- | Ordered vector of column names
+    _frameColumnKeys   :: !(Vector c)
   , -- | Quick lookup from column name to column index
-    _rframeLookup :: !(HashMap k Int)
+    _frameLookup :: !(HashMap c Int)
   , -- | Vector of rows. Each element should be the length of number of columns.
-    _rframeData   :: !(Vector (Vector v))
-  } deriving (Eq, Show, Functor)
-
--- | A simpler 'Frame' for updates
-data FrameUpdate k v = FrameUpdate
-  { -- | Ordered vector of column names
-    _rframeUpdateKeys :: !(Vector k)
-  , -- | Vector of rows.
-    _rframeUpdateData :: !(Vector (Vector v))
-  } deriving (Eq, Show, Functor)
-
--- | Alias for a function to be applied to each row
-type FrameMap k v a = Vector k -> HashMap k Int -> Int -> Vector v -> a
-
--- | Alias for a row filter
-type FrameFilter k v = FrameMap k v Bool
+    _frameData   :: !(Vector (Vector Text))
+  } deriving (Eq, Show)
 
 -- | Prettier alias for getting the keys of an 'Frame'
-rframeKeys :: Frame k v -> Vector k
-rframeKeys = _rframeKeys
+keys :: Frame r c -> Vector c
+keys = _frameColumnKeys
 
 -- | Prettier alias for getting the data matrix of an 'Frame'
-rframeData :: Frame k v -> Vector (Vector v)
-rframeData = _rframeData
+frameData :: Frame r c -> Vector (Vector Text)
+frameData = _frameData
 
 -- | An empty frame with no rows or columns
-empty :: Frame k v
-empty = Frame V.empty HM.empty V.empty
+empty :: Frame r c
+empty = Frame V.empty V.empty HM.empty V.empty
 
 -- | Build an 'Frame' from an 'FrameUpdate'.
 --   Throws on duplicate keys.
-fromUpdate :: (Data k, MonadThrow m) => FrameUpdate k v -> m (Frame k v)
-fromUpdate (FrameUpdate ks vs) = checkForDupes ks >> pure (Frame ks (makeLookup ks) vs)
+fromUpdate :: (Data r, MonadThrow m) => FrameUpdate r c -> m (Frame r c)
+fromUpdate (FrameUpdate rs cs vs) = checkForDupes rs >> pure (Frame rs cs (makeLookup rs) vs)
 
 -- | Build an 'FrameUpdate' from an 'Frame'
-toUpdate :: Data k => Frame k v -> FrameUpdate k v
-toUpdate (Frame ks _ vs) = FrameUpdate ks vs
+toUpdate :: Data r => Frame r c -> FrameUpdate r c
+toUpdate (Frame rs cs _ vs) = FrameUpdate rs cs vs
 
 -- | Number of columns in an 'Frame'
-numCols :: Frame k v -> Int
-numCols (Frame ks _ _) = V.length ks
+numCols :: Frame r c -> Int
+numCols (Frame _ cs _ _) = V.length cs
 
 -- | Number of rows in an 'Frame'
-numRows :: Frame k v -> Int
-numRows (Frame _ _ vs) = V.length vs
+numRows :: Frame r c -> Int
+numRows (Frame rs _ _ _) = V.length rs
 
 -- | Project to the given column
-col :: (Data k, MonadThrow m) => k -> Frame k v -> m (Vector v)
-col k (Frame _ look vs) = V.mapM (\v -> runLookup look v k) vs
+col :: (Data r, MonadThrow m) => r -> Frame r c -> m (Vector Text)
+col k (Frame _ _ look vs) = V.mapM (\v -> runLookup look v k) vs
 
 -- | Decode by row. Each element of the returned vector may fail on decoding error
 --   so flatten manually or use 'flatDecode'.
-decode :: (Data k, MonadThrow m) => Decoder m k v a -> Frame k v -> m (Vector (m a))
-decode decoder (Frame ks look vs) = checkSubset required keySet >> pure decoded
-  where
-    keySet = HS.fromList (V.toList ks)
-    required = decoderKeys decoder
-    decoded = runDecoder decoder . runLookup look <$> vs
+-- decode :: (Data r, MonadThrow m) => Decoder m r c a -> Frame r c -> m (Vector (m a))
+-- decode decoder (Frame ks _ look vs) = checkSubset required keySet >> pure decoded
+--   where
+--     keySet = HS.fromList (V.toList ks)
+--     required = decoderKeys decoder
+--     decoded = runDecoder decoder . runLookup look <$> vs
 
 -- | An auto-flattened version of 'decode'.
-flatDecode :: (Data k, MonadThrow m) => Decoder m k v a -> Frame k v -> m (Vector a)
-flatDecode decoder rframe = join $ sequence <$> decode decoder rframe
+-- flatDecode :: (Data r, MonadThrow m) => Decoder m r c a -> Frame r c -> m (Vector a)
+-- flatDecode decoder frame = join $ sequence <$> decode decoder frame
 
 -- | Filter an 'Frame' by row
-filter :: Data k => FrameFilter k v -> Frame k v -> Frame k v
-filter p (Frame ks look vs) = Frame ks look vs'
+filter :: Data r => FrameFilter r Text -> Frame r c -> Frame r c
+filter p (Frame rs cs look vs) = Frame rs cs look vs'
   where
-    vs' = V.ifilter (p ks look) vs
+    vs' = V.ifilter (p rs look) vs
 
 -- | Update row-wise, adding or replacing values per-column.
 --   Retains the existing column order, appending new columns.
 --   Throws on row length mismatch or duplicate columns in the update.
-update :: (Data k, MonadThrow m) => FrameUpdate k v -> Frame k v -> m (Frame k v)
-update (FrameUpdate uks uvs) (Frame fks _ fvs) = do
+update :: (Data r, MonadThrow m) => FrameUpdate r c -> Frame r c -> m (Frame r c)
+update (FrameUpdate urs ucs uvs) (Frame frs fcs _ fvs) = do
   let fSize = V.length fvs
       uSize = V.length uvs
   if fSize /= uSize
     then throwM (RowSizeMismatch fSize uSize)
     else do
-      checkForDupes uks
-      let kis = mergeKeys fks uks
+      checkForDupes urs
+      let kis = mergeKeys frs urs
           ks' = (\(k, _, _) -> k) <$> kis
           look' = makeLookup ks'
           vs' = V.zipWith (runIndexedLookup kis) fvs uvs
-      return (Frame ks' look' vs')
+      return (Frame ks' fcs look' vs')
 
 -- | Split columns in an 'Frame' by a predicate.
-splitCols :: Data k => (k -> Bool) -> Frame k v -> (Frame k v, Frame k v)
-splitCols p (Frame ks look vs) = (Frame keepKs keepLook keepVs, Frame dropKs dropLook dropVs)
+splitCols :: Data r => (r -> Bool) -> Frame r c -> (Frame r c, Frame r c)
+splitCols p (Frame rs cs look vs) = (Frame keepKs cs keepLook keepVs, Frame dropKs cs dropLook dropVs)
   where
-    (keepKs, dropKs) = V.partition p ks
+    (keepKs, dropKs) = V.partition p rs
     keepLook = makeLookup keepKs
     keepVs = reorder keepKs look <$> vs
     dropLook = makeLookup dropKs
     dropVs = reorder dropKs look <$> vs
 
 -- | Drop columns in an 'Frame' by a predicate.
-dropCols :: Data k => (k -> Bool) -> Frame k v -> Frame k v
+dropCols :: Data r => (r -> Bool) -> Frame r c -> Frame r c
 dropCols p frame = snd (splitCols p frame)
 
 -- | Keep columns in an 'Frame' by a predicate.
-keepCols :: Data k => (k -> Bool) -> Frame k v -> Frame k v
+keepCols :: Data r => (r -> Bool) -> Frame r c -> Frame r c
 keepCols p frame = fst (splitCols p frame)
 
 -- | Appends rows to an 'Frame', retaining column order of the first.
 --   Throws on column mismatch.
-appendRows :: (Data k, MonadThrow m) => Frame k v -> Frame k v -> m (Frame k v)
-appendRows (Frame ks0 look0 vs0) (Frame ks1 look1 vs1) = do
+appendRows :: (Data r, MonadThrow m) => Frame r c -> Frame r c -> m (Frame r c)
+appendRows (Frame ks0 cs look0 vs0) (Frame ks1 cs' look1 vs1) = do
   checkReorder ks0 ks1
   let vs1' = reorder ks0 look1 vs1
-  return (Frame ks0 look0 (vs0 V.++ vs1'))
+  return (Frame ks0 cs look0 (vs0 V.++ vs1'))
 
 -- | Appends columns to an 'Frame', retaining column order of the first.
-extendCols :: (Data k, MonadThrow m) => Frame k v -> Frame k v -> m (Frame k v)
+extendCols :: (Data r, MonadThrow m) => Frame r c -> Frame r c -> m (Frame r c)
 extendCols f g = update (toUpdate g) f
 
 -- | Takes first 'n' rows of an 'Frame'.
-takeRows :: Int -> Frame k v -> Frame k v
-takeRows n (Frame ks look vs) = Frame ks look (V.take n vs)
+takeRows :: Int -> Frame r c -> Frame r c
+takeRows n (Frame ks cs look vs) = Frame ks cs look (V.take n vs)
 
 -- | Adds a 'Vector' column to the 'Frame'
-addColumn :: (Data k, MonadThrow m) => Frame k v -> k -> Vector v -> m (Frame k v)
-addColumn rf name v = do
-  c <- newFrameColumn name $ V.singleton <$> v
-  extendCols rf c
- where
-  newFrameColumn rfName = fromUpdate . FrameUpdate (V.singleton rfName)
+addColumn :: (Data r, MonadThrow m) => Frame r c -> c -> Vector Text -> m (Frame r c)
+addColumn rf name v = undefined
