@@ -1,5 +1,5 @@
 name: analyze
-version: 0.1.0
+version: 0.2.0
 synopsis: Haskell data analysis and manipulation library
 description: Please see README.md
 homepage: https://github.com/DataHaskell/analyze
