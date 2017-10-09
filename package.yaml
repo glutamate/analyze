@@ -17,7 +17,6 @@ dependencies:
     - exceptions
     - free
     - hashable
-    - lucid
     - text
     - unordered-containers
     - vector
