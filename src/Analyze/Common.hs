@@ -93,4 +93,4 @@ mergeKeys xs ys =
 
 -- | Uses a merged key vector to select values.
 runIndexedLookup :: Vector (k, Int, Int) -> Vector v -> Vector v -> Vector v
-runIndexedLookup ks xs ys = (\(k, i, j) -> (if i == 0 then xs else ys) V.! j) <$> ks
+runIndexedLookup ks xs ys = (\(_, i, j) -> (if i == 0 then xs else ys) V.! j) <$> ks

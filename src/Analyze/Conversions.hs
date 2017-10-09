@@ -4,7 +4,7 @@ module Analyze.Conversions
   , projectRows
   ) where
 
-import           Analyze.Common      (Data, MissingKeyError (..), makeLookup)
+import           Analyze.Common      (Data, MissingKeyError (..))
 import           Analyze.RFrame      (RFrame (..), RFrameUpdate (..), fromUpdate)
 import           Control.Monad.Catch (MonadThrow (..))
 import           Data.HashMap.Strict (HashMap)

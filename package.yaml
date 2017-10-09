@@ -11,12 +11,10 @@ copyright: 2017 Analyze contributors
 category: Data Science
 dependencies:
     - base >= 4.9 && < 5
-    - aeson
     - binary
     - bytestring
     - cassava
     - exceptions
-    - foldl
     - free
     - hashable
     - lucid
@@ -25,6 +23,10 @@ dependencies:
     - vector
 
 default-extensions: OverloadedStrings
+
+ghc-options:
+    - -Wall
+    - -Werror
 
 library:
     source-dirs: src

@@ -42,9 +42,8 @@ decodeWithoutHeader bs =
 
 -- | Encode an 'RFrame' as CSV bytes with a header row.
 encodeWithHeader :: RFrame Text Text -> LBS.ByteString
-encodeWithHeader (RFrame ks _ vs) =
+encodeWithHeader (RFrame ks _ _) =
   let header = CB.encodeHeader (encodeUtf8 <$> ks)
-      rows = header `mappend` foldMap (CB.encodeRecord . (encodeUtf8 <$>)) vs
   in B.toLazyByteString header
 
 -- | Encode an 'RFrame' as CSV bytes without header row.
@@ -57,9 +56,9 @@ loadCSVFileWithHeader :: FilePath -> IO (RFrame Text Text)
 loadCSVFileWithHeader fileName = do
   contents <- readFile fileName
   decodeWithHeader (LBS8.pack contents)
-  
+
 loadCSVFileWithoutHeader :: FilePath -> IO (RFrame Int Text)
 loadCSVFileWithoutHeader fileName = do
   contents <- readFile fileName
   decodeWithoutHeader (LBS8.pack contents)
-  
+

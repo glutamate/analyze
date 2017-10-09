@@ -15,7 +15,6 @@ module Analyze.Decoding
 
 import           Analyze.Common           (Data)
 import           Control.Applicative.Free (Ap (..), liftAp)
-import           Data.Maybe               (fromMaybe)
 
 -- | Pair of key and an extraction function.
 data Arg m k v a = Arg k (v -> m a) deriving (Functor)
