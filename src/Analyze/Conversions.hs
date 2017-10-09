@@ -5,7 +5,7 @@ module Analyze.Conversions
   ) where
 
 import           Analyze.Common      (Data, MissingKeyError (..))
-import           Analyze.RFrame      (RFrame (..), RFrameUpdate (..), fromUpdate)
+import           Analyze.Frame      (Frame (..), FrameUpdate (..), fromUpdate)
 import           Control.Monad.Catch (MonadThrow (..))
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
@@ -21,8 +21,8 @@ projectRow ks row = V.mapM f ks
         Nothing -> throwM (MissingKeyError k)
         Just v  -> pure v
 
--- | Projects an 'RFrame' out of many maps according to the given key order.
-projectRows :: (Data k, MonadThrow m) => Vector k -> Vector (HashMap k v) -> m (RFrame k v)
+-- | Projects an 'Frame' out of many maps according to the given key order.
+projectRows :: (Data k, MonadThrow m) => Vector k -> Vector (HashMap k v) -> m (Frame k v)
 projectRows ks rs = do
   vs <- V.mapM (projectRow ks) rs
-  fromUpdate (RFrameUpdate ks vs)
+  fromUpdate (FrameUpdate ks vs)

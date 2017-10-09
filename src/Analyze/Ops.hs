@@ -4,7 +4,7 @@ module Analyze.Ops
   ) where
 
 import           Analyze.Common      (Data)
-import           Analyze.RFrame      (RFrame (..), RFrameUpdate (..), col, splitCols, update)
+import           Analyze.Frame      (Frame (..), FrameUpdate (..), col, splitCols, update)
 import           Control.Monad.Catch (MonadThrow (..))
 import qualified Data.HashSet        as HS
 import           Data.Vector         (Vector)
@@ -23,12 +23,12 @@ match :: Eq k => Vector k -> v -> v -> k -> Vector v
 match ks yesVal noVal tk = V.map (\k -> if k == tk then yesVal else noVal) ks
 
 -- | One-hot encode a given column. (See tests for usage.)
-oneHot :: (Data k, MonadThrow m) => (k -> v -> k) -> k -> v -> v -> RFrame k v -> m (RFrame k v)
+oneHot :: (Data k, MonadThrow m) => (k -> v -> k) -> k -> v -> v -> Frame k v -> m (Frame k v)
 oneHot combine key yesVal noVal frame = do
   let (target, cold) = splitCols (== key) frame
   rawVs <- col key target
   let cookedKs = V.map (combine key) rawVs
       newKs = uniq cookedKs
       newVs = V.map (match newKs yesVal noVal) cookedKs
-      hot = RFrameUpdate newKs newVs
+      hot = FrameUpdate newKs newVs
   update hot cold
