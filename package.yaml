@@ -29,7 +29,6 @@ ghc-options:
 
 library:
     source-dirs: src
-    other-modules: Paths_analyze
 
 tests:
     spec:
@@ -43,8 +42,6 @@ tests:
             - -with-rtsopts=-N
         dependencies:
             - QuickCheck
-            - tasty
-            - tasty-hunit
-            - tasty-quickcheck
+            - hspec
 
 
