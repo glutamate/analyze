@@ -1,18 +1,18 @@
 -- | Functions for working with CSV files.
 module Analyze.Csv where
 
-import           Analyze.Conversions        (projectRows)
+-- import           Analyze.Conversions        (projectRows)
 import           Analyze.Frame
 import           Control.Monad.Catch        (Exception, MonadThrow (..))
-import qualified Data.Binary.Builder        as B
+-- import qualified Data.Binary.Builder        as B
 import qualified Data.ByteString.Lazy       as LBS
-import qualified Data.ByteString.Lazy.Char8 as LBS8
-import qualified Data.Csv                   as C
-import qualified Data.Csv.Builder           as CB
+-- import qualified Data.ByteString.Lazy.Char8 as LBS8
+-- import qualified Data.Csv                   as C
+-- import qualified Data.Csv.Builder           as CB
 import           Data.Text                  (Text)
-import           Data.Text.Encoding         (decodeUtf8, encodeUtf8)
+-- import           Data.Text.Encoding         (decodeUtf8, encodeUtf8)
 import           Data.Typeable              (Typeable)
-import qualified Data.Vector                as V
+-- import qualified Data.Vector                as V
 
 -- | Exception to wrap Cassava error strings.
 data CsvError = CsvError String deriving (Eq, Show, Typeable)
